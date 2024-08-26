@@ -28,7 +28,9 @@
 }
 
 .instance h3 {
-    margin-bottom: 0.5rem;
+    font-size: 2rem;
+    font-weight: normal;
+    margin: 0 0 1rem 0;
 }
 
 .instance p {
@@ -56,7 +58,6 @@
 .bottom {
     display: flex;
     justify-content: space-between;
-    margin-top: auto;
     padding-top: 2rem;
 }
 
