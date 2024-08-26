@@ -1,0 +1,29 @@
+{% load static %}
+
+{% block css_files %}
+	<link rel="stylesheet" href="{% static "ec2_starter/instance.css"%}"/>
+{% endblock %}
+
+<li>
+	<div class="instance">
+{#			<div class="content">#}
+		<h3>{{ instance.name|title }}</h3>
+		<p>{{ instance.description }}</p>
+		<div class="bottom">
+			<div class="left">
+				<button>Start</button>
+				<button>View Site</button>
+			</div>
+			<div class="right">
+				<div class="top-row">
+					<span>Status:</span>
+					<span class="status-running">Running</span>
+				</div>
+				<div class="bottom-row">
+					<span>Time remaining:</span>
+					<span>59 minutes</span>
+				</div>
+			</div>
+		</div>
+	</div>
+</li>

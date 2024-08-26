@@ -1,9 +1,21 @@
 {% extends "base.html" %}
 
+{% load static %}
+
+{% block css_files %}
+	<link rel="stylesheet" href="{% static "ec2_starter/index.css"%}"/>
+{% endblock %}
+
 {% block title %}
 	Amazon EC2 Instance Starter
 {% endblock %}
 
 {% block content %}
 	<h1>Amazon EC2 Instance Starter</h1>
+
+	<ul>
+		{% for instance in instances %}
+			{% include "ec2_starter/includes/instance.html" %}
+		{% endfor %}
+	</ul>
 {% endblock %}
