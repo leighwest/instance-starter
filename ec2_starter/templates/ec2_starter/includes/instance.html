@@ -1,4 +1,5 @@
 {% load static %}
+{% load ec2_filters %}
 
 {% block css_files %}
 	<link rel="stylesheet" href="{% static "ec2_starter/instance.css"%}"/>
@@ -16,7 +17,7 @@
 			<div class="right">
 				<div class="top-row">
 					<span>Status:</span>
-					<span class="status-running">Running</span>
+					<span class="status {{ instance.status|status_class }}">{{ instance.status|title }}</span>
 				</div>
 				<div class="bottom-row">
 					<span>Time remaining:</span>

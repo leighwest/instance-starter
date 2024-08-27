@@ -15,6 +15,15 @@
     color: #28a745;
 }
 
+.status-stopped {
+    animation: pulse 2s ease-in-out infinite;
+    color: #d00909;
+}
+
+.status-pending, .status-stopping {
+    animation: pulse 2s ease-in-out infinite;
+}
+
 .instance {
     display: flex;
     flex-direction: column;
