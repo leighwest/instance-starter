@@ -2,7 +2,35 @@
 {% load ec2_filters %}
 
 {% block css_files %}
-	<link rel="stylesheet" href="{% static "ec2_starter/instance.css"%}"/>
+	<link rel="stylesheet" href="{% static "ec2_starter/instance.css" %}"/>
+{% endblock %}
+
+{% block js_files %}
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<script>
+      $(document).ready(function () {
+          $('.start-instance').click(function () {
+              const instanceName = $(this).data('instance-name');
+
+              $.ajax({
+                  url: '{% url "start-instance" %}',
+                  type: 'POST',
+                  data: {
+                      'instance_name': instanceName,
+                      'csrfmiddlewaretoken': '{{ csrf_token }}'
+                  },
+                  success: function (response) {
+                      if (!response.success) {
+                          alert('Error: ' + response.error);
+                      }
+                  },
+                  error: function () {
+                      alert('An error occurred while trying to start the instance.');
+                  }
+              });
+          });
+      });
+	</script>
 {% endblock %}
 
 <li>
@@ -11,14 +39,21 @@
 		<p>{{ instance.description }}</p>
 		<div class="bottom">
 			<div class="left">
-				<button>Start</button>
-				<button>View Site</button>
+				<button class="start-instance" data-instance-name="{{ instance.name }}">Start</button>
+				{% if instance.status == 'running' %}
+					<button>View Site</button>
+				{% endif %}
 			</div>
 			<div class="right">
 				<div class="top-row">
 					<span>Status:</span>
-					<span class="status {{ instance.status|status_class }}">{{ instance.status|title }}</span>
-				</div>
+					{% if instance %}
+						<span class="status {{ instance.status|default:'unknown'|status_class }}">
+            {{ instance.status|default:"Unknown"|title }}
+        </span>
+					{% else %}
+						<span class="status status-unknown">Unknown</span>
+					{% endif %}        </div>
 				<div class="bottom-row">
 					<span>Time remaining:</span>
 					<span>59 minutes</span>

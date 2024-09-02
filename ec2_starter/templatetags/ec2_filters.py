@@ -11,4 +11,6 @@ def status_class(value):
         'pending': 'status-pending',
         'stopping': 'status-stopping'
     }
+    if value is None:
+        return 'status-unknown'
     return status_classes.get(value.lower(), 'status-unknown')
