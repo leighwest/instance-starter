@@ -9,7 +9,6 @@ The application uses the boto3 library to manage AWS resources.  The data is sto
 Clone the repository and create a `.env` file to store environment variables for the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY. 
 
 ### Install libraries
-TODO: will need to create a requirements.txt
 
 `cd` into the root directory and run `pip install -r requirements.txt` .
 
