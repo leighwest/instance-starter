@@ -2,7 +2,7 @@
 {% load ec2_filters %}
 
 {% block css_files %}
-	<link rel="stylesheet" href="{% static "ec2_starter/instance.css" %}"/>
+	<link rel="stylesheet" href="{% static "ec2_starter/instance.css"%}"/>
 {% endblock %}
 
 {% block js_files %}
@@ -48,12 +48,15 @@
 				<div class="top-row">
 					<span>Status:</span>
 					{% if instance %}
-						<span class="status {{ instance.status|default:'unknown'|status_class }}">
-            {{ instance.status|default:"Unknown"|title }}
-        </span>
+						{% if instance.status == 'pending' %}
+							<span class="status {{ instance.status|default:'unknown'|status_class }}">Starting...</span>
+						{% else %}
+							<span class="status {{ instance.status|default:'unknown'|status_class }}">{{ instance.status|default:"Unknown"|title }}</span>
+						{% endif %}
 					{% else %}
 						<span class="status status-unknown">Unknown</span>
-					{% endif %}        </div>
+					{% endif %}
+				</div>
 				<div class="bottom-row">
 					<span>Time remaining:</span>
 					<span>59 minutes</span>
