@@ -22,4 +22,16 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
-Open the application with an IDE (such as PyCharm) and run the application. The URL is available at `http://localhost:8000`
+Open the application with an IDE (such as PyCharm) 
+
+In addition to the Django Server run configuration, create a separate Python run configuration with the following values:
+```
+Name: Celery Worker
+Interpreter: Python 3.13
+Script: -m
+Script parameters: celery -A instance_starter worker --pool=solo -l INFO
+Working directory: the project root
+```
+Finally, create a Compound Run Configuration and add the Django Server and Celery Worker run configs.
+
+Run the compound run configuration. The URL is available at `http://localhost:8000`
