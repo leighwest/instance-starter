@@ -25,13 +25,19 @@ def get_ec2_instance_status(instance_id):
                            region_name=settings.AWS_REGION)
 
         response = ec2.describe_instances(InstanceIds=[instance_id])
+        instance = response['Reservations'][0]['Instances'][0]
+        instance_state = instance['State']['Name']
 
-        instance_state = response['Reservations'][0]['Instances'][0]['State']['Name']
+        instance_time_remaining = calc_running_time_remaining(instance)
+
+        print("in get_ec2_instance_status")
+        print(instance_time_remaining)
 
         return {
             'success': True,
             'instance_id': instance_id,
-            'status': instance_state
+            'status': instance_state,
+            'time_remaining': instance_time_remaining
         }
 
     except ClientError as e:
@@ -44,6 +50,19 @@ def get_ec2_instance_status(instance_id):
             'success': False,
             'error': f"An unexpected error occurred: {str(e)}"
         }
+
+
+def calc_running_time_remaining(instance):
+    instance_tags = instance.get('Tags', [])
+    expiration_tag = next((tag for tag in instance_tags if tag.get('Key') == 'ExpirationTime'), None)
+    if expiration_tag is not None:
+        expiration_str = expiration_tag['Value']
+        expiration_date = datetime.strptime(expiration_str, '%Y-%m-%d %H:%M:%S')
+        seconds_remaining = (expiration_date - datetime.now()).total_seconds()
+        return seconds_remaining if seconds_remaining > 0 else None
+
+    return None
+
 
 @shared_task
 def stop_instance(instance_id):
@@ -79,7 +98,7 @@ def start_ec2_instance(instance_id):
 
         if expiration_time is None:
             melbourne_tz = pytz.timezone('Australia/Melbourne')
-            expiration_time = datetime.now(melbourne_tz) + timedelta(seconds=20)
+            expiration_time = datetime.now(melbourne_tz) + timedelta(seconds=190)
 
         ec2.create_tags(Resources=[instance_id], Tags=[{'Key': 'ExpirationTime', 'Value': expiration_time.strftime('%Y-%m-%d %H:%M:%S')}])
 

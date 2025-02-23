@@ -10,6 +10,10 @@
   }
 }
 
+.hidden {
+  visibility: hidden;
+}
+
 .status-running {
   animation: pulse 2s ease-in-out infinite;
   color: #28a745;
