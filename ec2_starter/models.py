@@ -1,6 +1,6 @@
 from django.db import models
 
-
+# FIXME: probably don't need state and last_start_time
 class EC2(models.Model):
     instance_id = models.CharField(max_length=20, unique=True)
     region = models.CharField(max_length=20)

@@ -1,15 +1,36 @@
 import boto3
 import pytz
+import redis
 from datetime import datetime, timedelta
 
 from celery import shared_task
+
 from django.conf import settings
 from botocore.exceptions import ClientError
 
 import logging
 
+from instance_starter.celery import app
+
 logger = logging.getLogger('instance_starter')
 logger.propagate = True
+
+redis_client = redis.StrictRedis.from_url(settings.CELERY_BROKER_URL)
+
+def set_global_task_id(instance_id, task_id):
+    key = f"ec2_shutdown_task:{instance_id}"
+    redis_client.set(key, task_id)
+
+
+def get_global_task_id(instance_id):
+    key = f"ec2_shutdown_task:{instance_id}"
+    return redis_client.get(key)
+
+
+def delete_global_task_id(instance_id):
+    key = f"ec2_shutdown_task:{instance_id}"
+    return redis_client.delete(key)
+
 
 def get_ec2_instance_status(instance_id):
     """
@@ -29,9 +50,6 @@ def get_ec2_instance_status(instance_id):
         instance_state = instance['State']['Name']
 
         instance_time_remaining = calc_running_time_remaining(instance)
-
-        print("in get_ec2_instance_status")
-        print(instance_time_remaining)
 
         return {
             'success': True,
@@ -74,9 +92,11 @@ def stop_instance(instance_id):
                            region_name=settings.AWS_REGION)
 
         ec2.stop_instances(InstanceIds=[instance_id])
+        delete_global_task_id(instance_id)
         logger.info(f"Instance {instance_id} stopped successfully")
     except Exception as e:
         logger.error(f"Error stopping instance {instance_id}: {e}")
+
 
 def start_ec2_instance(instance_id):
     """
@@ -98,17 +118,17 @@ def start_ec2_instance(instance_id):
 
         if expiration_time is None:
             melbourne_tz = pytz.timezone('Australia/Melbourne')
-            expiration_time = datetime.now(melbourne_tz) + timedelta(seconds=190)
+            expiration_time = datetime.now(melbourne_tz) + timedelta(seconds=70)
 
-        ec2.create_tags(Resources=[instance_id], Tags=[{'Key': 'ExpirationTime', 'Value': expiration_time.strftime('%Y-%m-%d %H:%M:%S')}])
+        ec2.create_tags(Resources=[instance_id],
+                        Tags=[{'Key': 'ExpirationTime', 'Value': expiration_time.strftime('%Y-%m-%d %H:%M:%S')}])
 
-        # Schedule the task to run in 20 seconds
-        logger.info(f"Calling stop instance")
-        logger.info(f"ETA: {expiration_time}")
-        logger.info(f"Timezone: Australia/Melbourne")
+        task_id = get_global_task_id(instance_id)
+        if task_id is not None:
+            app.control.revoke(task_id.decode('utf-8'), terminate=False)
 
-        stop_instance.apply_async(args=[instance_id], eta=expiration_time)
-
+        task_result = stop_instance.apply_async(args=[instance_id], eta=expiration_time)
+        set_global_task_id(instance_id, task_result.id)
 
         return {
             'success': True,

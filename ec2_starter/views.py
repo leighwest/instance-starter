@@ -49,9 +49,6 @@ def instance_status(request):
         if not status_response['success']:
             return JsonResponse({'success': False, 'error': status_response['error']}, status=500)
 
-        print("in instance_status")
-        print(status_response['time_remaining'])
-
         return JsonResponse({'success': True, 'status': status_response['status'], 'time_remaining': status_response['time_remaining']
                              })
 

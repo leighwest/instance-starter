@@ -1,8 +1,6 @@
 (function () {
-    console.log('Executing the function in time-remaining.js')
-
     function updateDisplay() {
-        console.log("in updateDisplay timeRemainingSeconds is")
+        console.log("In updateDisplay timeRemainingSeconds is")
         console.log(timeRemainingSeconds)
 
         if (timeRemainingSeconds < 60) {
