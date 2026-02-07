@@ -2,132 +2,71 @@
 {% load ec2_filters %}
 
 {% block css_files %}
-	<link rel="stylesheet" href="{% static "ec2_starter/instance.css" %}"/>
+<link rel="stylesheet" href="{% static "ec2_starter/instance.css" %}"/>
 {% endblock %}
 
 {% block js_files %}
-	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-	<script>
-      function formatTimeRemaining(seconds) {
-          if (seconds < 60) {
-              return 'Less than 1 minute'
-          }
-          const minutes = Math.floor(seconds / 60)
-          return minutes === 1 ? minutes + ' ' + 'minute' : minutes + ' ' + 'minutes'
-      }
-
-      function updateTimeRemainingComponent(response, slugInstanceName, statusSpan) {
-          console.log(response)
-          const capitalizedStatus = response.status.charAt(0).toUpperCase() + response.status.slice(1);
-          statusSpan.text(capitalizedStatus);
-          const viewSiteButton = $("#" + slugInstanceName + "-view-site");
-          viewSiteButton.removeClass('hidden')
-          const timeRemainingWrapper = $("#" + slugInstanceName + "-time-remaining-wrapper");
-          const timeRemaining = $("#" + slugInstanceName + "-time-remaining");
-          timeRemaining.text(formatTimeRemaining(response.time_remaining));
-          timeRemainingWrapper.removeClass('hidden')
-      }
-
-      $(document).ready(function () {
-          function pollInstanceStatus(instanceName) {
-              console.log("Polling started for", instanceName);
-              const pollingInterval = setInterval(function () {
-                  $.ajax({
-                      url: '{% url "instance-status" %}',
-                      type: 'GET',
-                      data: {'instance_name': instanceName},
-                      success: function (response) {
-                          if (response.success) {
-                              const status = response.status;
-                              console.log("HERE")
-                              console.log(response)
-                              const slugInstanceName = instanceName.replace(/\s+/g, '-');
-                              const statusSpan = $("#" + slugInstanceName + "-status");
-
-                              statusSpan.removeClass('status-running status-stopped status-pending status-stopping');
-                              statusSpan.addClass(`status-${status}`);
-                              statusSpan.text("Starting...");
-
-                              if (status === 'running') {
-                                  updateTimeRemainingComponent(response, slugInstanceName, statusSpan)
-                                  clearInterval(pollingInterval);
-                              }
-                          } else {
-                              console.error('Error fetching status:', response.error);
-                          }
-                      },
-                      error: function () {
-                          console.error('Failed to fetch instance status.');
-                      }
-                  });
-              }, 1000); // Poll every 1 second
-          }
-
-          $('.start-instance').click(function () {
-              const instanceName = $(this).data('instance-name');
-
-              $.ajax({
-                  url: '{% url "start-instance" %}',
-                  type: 'POST',
-                  data: {
-                      'instance_name': instanceName,
-                      'csrfmiddlewaretoken': '{{ csrf_token }}'
-                  },
-                  success: function (response) {
-                      if (!response.success) {
-                          alert('Error: ' + response.error);
-                      }
-                  },
-                  error: function () {
-                      alert('An error occurred while trying to start the instance.');
-                  }
-              });
-              pollInstanceStatus(instanceName)
-          });
-      });
-	</script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{% static 'ec2_starter/ui-update-handler.js' %}"></script>
+<script src="{% static 'ec2_starter/websocket-handler.js' %}"></script>
+<script src="{% static 'ec2_starter/instance-control.js' %}"></script>
+<script>
+	window.CSRF_TOKEN = '{{ csrf_token }}';
+	window.START_INSTANCE_URL = '{% url "start-instance" %}';
+</script>
 {% endblock %}
 
 <li>
 	<div class="instance">
-		<h3>{{ instance.name|title }}</h3>
-		<p>{{ instance.description }}</p>
-		<div class="bottom">
-			<div class="left">
+		<div class="left">
+			<h2>{{ instance.name|title }}</h2>
+			<p>{{ instance.description }}</p>
+			<div class="button-wrapper">
 				<button class="start-instance" data-instance-name="{{ instance.name }}">Start</button>
 				<button id="{{ instance.name|slugify }}-view-site"
 				        class="{% if instance.status != 'running' %}hidden{% endif %}">View Site
 				</button>
 			</div>
-			<div class="right">
-				<div class="top-row">
-					<span>Status:</span>
-					{% if instance %}
-						{% if instance.status == 'pending' %}
+		</div>
+		<div class="right">
+			<div class="top-row">
+				<div class="status-wrapper">
+					<h3>Status:</h3>
+					<div class="statuses-wrapper">
+						<div class="individual-status">
+							{% if instance %}
+							<span>EC2 Instance:</span>
+							{% if instance.status == 'pending' %}
 							<span id="{{ instance.name|slugify }}-status"
 							      class="status {{ instance.status|default:'unknown'|status_class }}">Starting...</span>
-						{% else %}
+							{% else %}
 							<span id="{{ instance.name|slugify }}-status"
 							      class="status {{ instance.status|default:'unknown'|status_class }}">{{ instance.status|default:"Unknown"|title }}</span>
-						{% endif %}
-					{% else %}
-						<span class="status status-unknown">Unknown</span>
-					{% endif %}
-				</div>
-				<div class="bottom-row">
-					<div id="{{ instance.name|slugify }}-time-remaining-wrapper"
-					     class="{% if instance.status != 'running' %}hidden{% endif %}">
-						<span>Time remaining:</span>
-						<span id="{{ instance.name|slugify }}-time-remaining">
-						</span>
-						{% if instance.status == 'running' and instance.time_remaining %}
+							{% endif %}
+							{% else %}
+							<span class="status status-unknown">Unknown</span>
+							{% endif %}
+						</div>
+						<div class="individual-status">
+							<span>Application:</span>
+						</div>
+					</div>
+					<div class="bottom-row">
+						<div id="{{ instance.name|slugify }}-time-remaining-wrapper"
+						     class="{% if instance.status != 'running' %}hidden{% endif %}">
+							<span>Time remaining:</span>
+							<span id="{{ instance.name|slugify }}-time-remaining">
+        {{ instance.time_remaining }}
+       </span>
+							{% if instance.status == 'running' and instance.time_remaining %}
 							<script>
-                  // Global variables using Django context data
-                  const timeRemainingSeconds = {{ instance.time_remaining }};
-                  const timeRemaining = document.getElementById("{{ instance.name|slugify }}-time-remaining");
+								// Global variables using Django context data
+								const timeRemainingSeconds = {{ instance.time_remaining }};
+								const instanceName = "{{ instance.name|slugify }}";
 							</script>
-							<script src="{% static 'ec2_starter/time-remaining.js' %}"></script>
-						{% endif %}
+							<script src="{% static 'ec2_starter/update-time-remaining.js' %}"></script>
+							{% endif %}
+						</div>
 					</div>
 				</div>
 			</div>

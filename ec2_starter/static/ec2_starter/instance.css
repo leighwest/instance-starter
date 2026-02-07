@@ -11,16 +11,14 @@
 }
 
 .hidden {
-  visibility: hidden;
+  display: none;
 }
 
 .status-running {
-  animation: pulse 2s ease-in-out infinite;
   color: #28a745;
 }
 
 .status-stopped {
-  animation: pulse 2s ease-in-out infinite;
   color: #d00909;
 }
 
@@ -30,7 +28,6 @@
 
 .instance {
   display: flex;
-  flex-direction: column;
   width: 50%;
   min-width: 50rem;
   min-height: 15rem;
@@ -41,14 +38,27 @@
   overflow: hidden;
 }
 
+.instance h2,
 .instance h3 {
-  font-size: 2rem;
   font-weight: normal;
   margin: 0 0 1rem 0;
 }
 
-.instance p {
+.instance h2 {
+  font-size: 2rem;
+}
+
+.instance h3 {
+  font-size: 1.5rem;
+}
+
+.instance p,
+.instance span {
   margin: 0 0 1rem 0;
+}
+
+.instance span {
+  display: inline-block;
 }
 
 .instance button {
@@ -73,14 +83,17 @@
   transform: translateY(-7px);
 }
 
-.bottom {
-  display: flex;
-  justify-content: space-between;
-  padding-top: 2rem;
-}
-
 .left {
   display: flex;
+  flex-direction: column;
+  max-width: 50%;
+  border-right: #4974A5 solid 0.1rem;
+  padding-right: 1rem;
+}
+
+.button-wrapper {
+  display: flex;
+  flex-direction: row;
 }
 
 .right {
@@ -88,6 +101,7 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-start;
+  margin-left: 3rem;
 }
 
 .top-row, .bottom-row {
@@ -99,11 +113,20 @@
 .top-row span:first-child,
 .bottom-row span:first-child {
   min-width: 120px;
-  text-align: right;
+  /*text-align: right;*/
   margin-right: 1rem;
 }
 
 .top-row span:last-child,
 .bottom-row span:last-child {
   text-align: left;
+}
+
+.status-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.individual-status {
+  justify-content: space-between;
 }

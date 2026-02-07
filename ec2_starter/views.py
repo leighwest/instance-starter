@@ -1,37 +1,33 @@
-from dataclasses import dataclass, asdict
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_POST
 
 from .models import EC2
+from .service.ec2_service import get_ec2_instance_status, start_ec2_instance
+from .service.exceptions import InstanceNotFoundError, EC2ServiceError
 
-from .service.ec2_service import get_ec2_instance_status
-from .service.ec2_service import start_ec2_instance
-
-# FIXME: need to return this more consistently
-@dataclass
-class EC2DTO:
-    success: bool
-    instance_name: str
-    status: str
-
+import logging
+logger = logging.getLogger('instance_starter')
+logger.propagate = True
 
 @require_POST
 def start_instance(request):
     instance_name = request.POST.get('instance_name')
-    instance = EC2.get_by_name(request.POST.get('instance_name'))
 
-    if instance is None:
+    try:
+        result = start_ec2_instance(instance_name)
+
         return JsonResponse({
-            'success': False,
-            'error': f"Instance with name '{instance_name}' not found."
-        }, status=404)
+            'success': True,
+            'instance_name': instance_name,
+            'status': result['status']
+        }, status=202)
 
-    result = start_ec2_instance(instance.instance_id)
+    except InstanceNotFoundError as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=404)
+    except EC2ServiceError as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-    response = EC2DTO(success=result.get('success'), instance_name=instance.name, status=result.get('status'))
-
-    return JsonResponse(asdict(response), status=200 if result.get('success') else 500)
 
 def instance_status(request):
     """
@@ -46,28 +42,39 @@ def instance_status(request):
         instance = EC2.objects.get(name=instance_name)
         status_response = get_ec2_instance_status(instance.instance_id)
 
-        if not status_response['success']:
-            return JsonResponse({'success': False, 'error': status_response['error']}, status=500)
+        return JsonResponse({
+            'success': True,
+            'status': status_response['status'],
+            'time_remaining': status_response['time_remaining']
+        })
 
-        return JsonResponse({'success': True, 'status': status_response['status'], 'time_remaining': status_response['time_remaining']
-                             })
-
-    except:
+    except EC2.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Instance not found'}, status=404)
+    except EC2ServiceError as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 def starting_page(request):
     instances = EC2.objects.all()
 
-    instances_with_status = [
-        {
-            'name': instance.name,
-            'description': instance.description,
-            'status': status_info.get('status'),
-            'time_remaining': status_info.get('time_remaining')
-        }
-        for instance in instances
-        for status_info in [get_ec2_instance_status(instance.instance_id)]
-    ]
+    instances_with_status = []
+    for instance in instances:
+        try:
+            status_info = get_ec2_instance_status(instance.instance_id)
+            instances_with_status.append({
+                'name': instance.name,
+                'description': instance.description,
+                'status': status_info.get('status'),
+                'time_remaining': status_info.get('time_remaining')
+            })
+        except EC2ServiceError as e:
+            # If AWS call fails, show unknown - WebSocket will retry
+            instances_with_status.append({
+                'name': instance.name,
+                'description': instance.description,
+                'status': 'unknown',
+                'time_remaining': None
+            })
+            logger.error(f"Failed to get status for {instance.name}: {e}")
 
     return render(request, "ec2_starter/index.html", {
         "instances": instances_with_status
