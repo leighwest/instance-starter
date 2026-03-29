@@ -24,7 +24,7 @@ services:
     command: daphne -b 0.0.0.0 -p 8000 instance_starter.asgi:application
     volumes:
       - .:/app
-      - static_volume:/app/staticfiles
+      - ./staticfiles:/app/staticfiles
     ports:
       - "8000:8000"
     env_file:
@@ -64,5 +64,4 @@ services:
 
 volumes:
   postgres_data:
-  static_volume:
   redis_data:
