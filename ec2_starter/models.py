@@ -6,6 +6,10 @@ class EC2(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(max_length=500, blank=True)
 
+    class Meta:
+        verbose_name = "EC2 Instance"
+        verbose_name_plural = "EC2 Instances"
+
     class DoesNotExist(Exception):
         pass
 
