@@ -104,9 +104,9 @@ AWS_REGION = os.environ.get('AWS_REGION', 'ap-southeast-4')
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DATABASE_NAME', 'ec2_manager'),
-        'USER': os.environ.get('DATABASE_USER', 'user'),
-        'PASSWORD': os.environ.get('DATABASE_PASSWORD', 'password'),
+        'NAME': os.environ.get('DATABASE_NAME'),
+        'USER': os.environ.get('DATABASE_USER'),
+        'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
         'HOST': os.environ.get('DATABASE_HOST', 'localhost'),
         'PORT': os.environ.get('DATABASE_PORT', '5432'),
     }
