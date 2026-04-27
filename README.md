@@ -1,37 +1,58 @@
-# AWS EC2 Instance Manager
+# EC2 Instance Starter
 
-This Python Django web application allows users to start AWS EC2 instances using a simple UI. The purpose of the application is to enable people to view hobby projects I have created and deployed on AWS infrastructure, without incurring costs while they're idling.
+A Django web application for starting and stopping AWS EC2 instances via a simple UI. Built to let people spin up my hobby projects on demand without leaving infrastructure running idle.
 
-The application uses the boto3 library to manage AWS resources.  The data is stored in a Dockerised PostgreSQL database.
+Live site: [instance-starter.leighwest.dev](https://instance-starter.leighwest.dev)
 
-## Local Development Setup
+## What it does
 
-Clone the repository and create a `.env` file to store environment variables for the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY. 
+- Start and stop EC2 instances from a web UI
+- Real-time status updates via WebSockets
+- Background task scheduling with Celery Beat
+- Django admin for instance management
 
-### Install libraries
+## Tech stack
 
-`cd` into the root directory and run `pip install -r requirements.txt` .
+- **App**: Django 5.1, Daphne (ASGI), Django Channels (WebSockets), Celery
+- **Data**: PostgreSQL 14, Redis 7
+- **Infra**: Vultr VPS, Terraform, cloud-init, Nginx, Let's Encrypt
+- **CI/CD**: Self-hosted GitHub Actions runner
 
-### Create local database
-`cd` into the root directory and run `docker-compose up`.
+## Infrastructure
 
-Run the database migrations by executing the following from the root directory:
+Zero-touch provisioning via Terraform and cloud-init — a single `terraform apply` provisions the VPS, configures Nginx, clones the repo, and starts all services. A self-hosted GitHub Actions runner handles continuous deployment on push to `main`.
+
+See [instance-starter-infra](https://github.com/leighwest/instance-starter-infra) for the full infrastructure code.
+
+## Local development
+
+### Prerequisites
+
+- Docker Desktop
+- AWS credentials with EC2 permissions
+
+### Setup
+
+1. Clone the repo and copy the example env file:
+```bash
+    git clone https://github.com/leighwest/instance-starter
+    cd instance-starter
+    cp .env.example .env
 ```
-python manage.py makemigrations ec2_starter --empty
-python manage.py makemigrations
-python manage.py migrate
+
+2. Fill in your values in `.env` — AWS credentials and a Django secret key are required.
+
+3. Start all services:
+```bash
+    docker-compose up -d
 ```
 
-Open the application with an IDE (such as PyCharm) 
-
-In addition to the Django Server run configuration, create a separate Python run configuration with the following values:
+4. Run migrations and create a superuser:
+```bash
+    docker-compose exec web python manage.py migrate
+    docker-compose exec web python manage.py ensure_superuser
 ```
-Name: Celery Worker
-Interpreter: Python 3.13
-Script: -m
-Script parameters: celery -A instance_starter worker --pool=solo -l INFO
-Working directory: the project root
-```
-Finally, create a Compound Run Configuration and add the Django Server and Celery Worker run configs.
 
-Run the compound run configuration. The URL is available at `http://localhost:8000`
+5. Visit [http://localhost:8000](http://localhost:8000)
+
+Django admin is available at `/admin` using the credentials from your `.env`.
