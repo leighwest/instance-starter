@@ -5,7 +5,6 @@ on:
       - main
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
     permissions:
@@ -31,13 +30,12 @@ jobs:
           tags: ghcr.io/leighwest/instance-starter:latest
   deploy:
     runs-on: self-hosted
+    needs: build
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
       - name: Deploy to server
         run: |
           cd /home/deployer/instance-starter &&
-          git pull origin main &&
+          docker-compose pull web &&
           docker-compose down &&
           docker-compose up -d &&
           docker-compose exec -T web python manage.py migrate &&
