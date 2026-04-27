@@ -16,12 +16,9 @@ services:
     restart: unless-stopped
 
   web:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.web
+    image: ghcr.io/leighwest/instance-starter:latest
     command: daphne -b 0.0.0.0 -p 8000 instance_starter.asgi:application
     volumes:
-      - .:/app
       - ./staticfiles:/app/staticfiles
     ports:
       - "8000:8000"
@@ -33,12 +30,8 @@ services:
     restart: unless-stopped
 
   celery_worker:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.web
+    image: ghcr.io/leighwest/instance-starter:latest
     command: celery -A instance_starter worker -l info
-    volumes:
-      - .:/app
     env_file:
       - .env
     depends_on:
@@ -47,12 +40,8 @@ services:
     restart: unless-stopped
 
   celery_beat:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.web
+    image: ghcr.io/leighwest/instance-starter:latest
     command: celery -A instance_starter beat -l info
-    volumes:
-      - .:/app
     env_file:
       - .env
     depends_on:
