@@ -1,58 +1,69 @@
-# EC2 Instance Starter
+# instance-starter
 
-A Django web application for starting and stopping AWS EC2 instances via a simple UI. Built to let people spin up my hobby projects on demand without leaving infrastructure running idle.
+A Django application for managing AWS EC2 instance start/stop operations via a web UI. Uses WebSockets for real-time status updates and Celery for background tasks.
 
-Live site: [instance-starter.leighwest.dev](https://instance-starter.leighwest.dev)
+**Live site:** https://instance-starter.leighwest.dev
+
+---
 
 ## What it does
 
-- Start and stop EC2 instances from a web UI
-- Real-time status updates via WebSockets
-- Background task scheduling with Celery Beat
-- Django admin for instance management
+- Start and stop EC2 instances from a web interface
+- Real-time status updates via WebSockets (no page refresh required)
+- Background task processing with Celery
+- Scheduled status broadcasts every 10 seconds via Celery Beat
+
+---
 
 ## Tech stack
 
-- **App**: Django 5.1, Daphne (ASGI), Django Channels (WebSockets), Celery
-- **Data**: PostgreSQL 14, Redis 7
-- **Infra**: Vultr VPS, Terraform, cloud-init, Nginx, Let's Encrypt
-- **CI/CD**: Self-hosted GitHub Actions runner
+| Layer | Technology |
+|---|---|
+| Framework | Django 5.1.2, Python 3.11 |
+| ASGI server | Daphne |
+| WebSockets | Django Channels |
+| Task queue | Celery + Celery Beat |
+| Database | PostgreSQL 14 |
+| Cache / broker | Redis 7 |
+| Containerisation | Docker Compose |
+| Reverse proxy | Nginx |
+| Cloud provider | AWS (EC2 management target) |
 
-## Infrastructure
+---
 
-Zero-touch provisioning via Terraform and cloud-init — a single `terraform apply` provisions the VPS, configures Nginx, clones the repo, and starts all services. A self-hosted GitHub Actions runner handles continuous deployment on push to `main`.
+## Repository structure
 
-See [instance-starter-infra](https://github.com/leighwest/instance-starter-infra) for the full infrastructure code.
-
-## Local development
-
-### Prerequisites
-
-- Docker Desktop
-- AWS credentials with EC2 permissions
-
-### Setup
-
-1. Clone the repo and copy the example env file:
-```bash
-    git clone https://github.com/leighwest/instance-starter
-    cd instance-starter
-    cp .env.example .env
+```
+instance-starter/          # this repo — application code
+instance-starter-infra/    # separate repo — Terraform + cloud-init
 ```
 
-2. Fill in your values in `.env` — AWS credentials and a Django secret key are required.
+Key files in this repo:
 
-3. Start all services:
+- `instance_starter/settings.py` — Django settings, all config via environment variables
+- `docker-compose.yaml` — 5 services: db, redis, web, celery_worker, celery_beat
+- `docker/Dockerfile.web` — Django app container
+- `ec2_starter/models.py` — EC2 model
+- `ec2_starter/management/commands/ensure_superuser.py` — idempotent superuser creation
+- `.env.example` — environment variable template
+- `.github/workflows/deploy.yml` — CI/CD pipeline
+
+---
+
+## Running locally
+
 ```bash
-    docker-compose up -d
+git clone https://github.com/leighwest/instance-starter.git
+cd instance-starter
+cp .env.example .env
+# fill in .env with local values
+docker-compose up -d
 ```
 
-4. Run migrations and create a superuser:
-```bash
-    docker-compose exec web python manage.py migrate
-    docker-compose exec web python manage.py ensure_superuser
-```
+The app will be available at http://localhost:8000.
 
-5. Visit [http://localhost:8000](http://localhost:8000)
+---
 
-Django admin is available at `/admin` using the credentials from your `.env`.
+## Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for full production deployment instructions, including Terraform provisioning, GHCR image registry, CI/CD pipeline, and SSL setup.
