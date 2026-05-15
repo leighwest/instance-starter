@@ -19,3 +19,14 @@
 		{% endfor %}
 	</ul>
 {% endblock %}
+
+{% block js_files %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{% static 'ec2_starter/ui-update-handler.js' %}"></script>
+<script src="{% static 'ec2_starter/websocket-handler.js' %}"></script>
+<script src="{% static 'ec2_starter/instance-control.js' %}"></script>
+<script>
+	window.CSRF_TOKEN = '{{ csrf_token }}';
+	window.START_INSTANCE_URL = '{% url "start-instance" %}';
+</script>
+{% endblock %}
