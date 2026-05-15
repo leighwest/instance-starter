@@ -41,5 +41,5 @@ jobs:
           docker-compose exec -T web python manage.py migrate &&
           docker-compose exec -T web python manage.py collectstatic --noinput
           docker-compose exec -T web python manage.py sync_instances
-          
-          
+      - name: Clean up Docker images
+        run: docker image prune -a -f
