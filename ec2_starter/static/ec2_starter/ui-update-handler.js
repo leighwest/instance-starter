@@ -6,9 +6,9 @@ function formatTimeRemaining(seconds) {
     return minutes === 1 ? minutes + ' ' + 'minute' : minutes + ' ' + 'minutes'
 }
 
-function updateTimeRemainingComponent(instanceName, timeRemaining) {
+function updateTimeRemainingComponent(instanceName, timeRemaining, instanceStatus) {
     const timeRemainingWrapper = $("#" + instanceName + "-time-remaining-wrapper");
-    if (timeRemaining != null) {
+    if (timeRemaining != null && instanceStatus === 'running') {
         const timeRemainingSpan = $("#" + instanceName + "-time-remaining");
         timeRemainingSpan.text(formatTimeRemaining(timeRemaining));
         timeRemainingWrapper.removeClass('hidden');
@@ -32,5 +32,5 @@ function updateStatus(instanceName, instanceStatus, timeRemaining, publicIp) {
         viewSiteButton.addClass('hidden');
     }
 
-    updateTimeRemainingComponent(instanceName, timeRemaining);
+    updateTimeRemainingComponent(instanceName, timeRemaining, instanceStatus);
 }
