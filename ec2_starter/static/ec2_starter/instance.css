@@ -26,6 +26,14 @@
   animation: pulse 2s ease-in-out infinite;
 }
 
+ul {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  list-style: none;
+  padding: 0;
+}
+
 .instance {
   display: flex;
   width: 50%;
