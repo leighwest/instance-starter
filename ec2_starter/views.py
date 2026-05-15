@@ -64,7 +64,8 @@ def starting_page(request):
                 'name': instance.name,
                 'description': instance.description,
                 'status': status_info.get('status'),
-                'time_remaining': status_info.get('time_remaining')
+                'time_remaining': status_info.get('time_remaining'),
+                'public_ip': status_info.get('public_ip')
             })
         except EC2ServiceError as e:
             # If AWS call fails, show unknown - WebSocket will retry
@@ -72,7 +73,8 @@ def starting_page(request):
                 'name': instance.name,
                 'description': instance.description,
                 'status': 'unknown',
-                'time_remaining': None
+                'time_remaining': None,
+                'public_ip': None
             })
             logger.error(f"Failed to get status for {instance.name}: {e}")
 

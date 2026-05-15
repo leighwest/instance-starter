@@ -1,22 +1,18 @@
 {% load static %}
 {% load ec2_filters %}
 
-{% block css_files %}
-<link rel="stylesheet" href="{% static "ec2_starter/instance.css" %}"/>
-{% endblock %}
-
-<li>
+<li class="instance-item"
+    data-instance-name="{{ instance.name|slugify }}"
+    data-status="{{ instance.status }}"
+    data-public-ip="{{ instance.public_ip|default:'' }}"
+    data-time-remaining="{{ instance.time_remaining|default:'' }}">
 	<div class="instance">
 		<div class="left">
 			<h2>{{ instance.name|pretty_name }}</h2>
 			<p>{{ instance.description }}</p>
 			<div class="button-wrapper">
 				<button class="start-instance" data-instance-name="{{ instance.name }}">Start</button>
-				<button id="{{ instance.name|slugify }}-view-site"
-				        class="{% if instance.status != 'running' %}hidden{% endif %}"
-				        data-url="{% if instance.status == 'running' %}http://{{ instance.public_ip }}{% endif %}">
-					View Site
-				</button>
+				<button id="{{ instance.name|slugify }}-view-site" class="hidden" data-url="">View Site</button>
 			</div>
 		</div>
 		<div class="right">
@@ -25,7 +21,6 @@
 					<h3>Status:</h3>
 					<div class="statuses-wrapper">
 						<div class="individual-status">
-							{% if instance %}
 							<span>EC2 Instance:</span>
 							{% if instance.status == 'pending' %}
 							<span id="{{ instance.name|slugify }}-status"
@@ -34,32 +29,16 @@
 							<span id="{{ instance.name|slugify }}-status"
 							      class="status {{ instance.status|default:'unknown'|status_class }}">{{ instance.status|default:"Unknown"|title }}</span>
 							{% endif %}
-							{% else %}
-							<span class="status status-unknown">Unknown</span>
-							{% endif %}
 						</div>
-						<div class="individual-status">
+						<div class="individual-status hidden" id="{{ instance.name|slugify }}-app-status-wrapper">
 							<span>Application:</span>
-							<span id="{{ instance.name|slugify }}-app-status" class="{% if instance.status != 'running' %}hidden{% endif %}">
-					      Checking...
-					    </span>
+							<span id="{{ instance.name|slugify }}-app-status" class="status-pending">Checking...</span>
 						</div>
 					</div>
 					<div class="bottom-row">
-						<div id="{{ instance.name|slugify }}-time-remaining-wrapper"
-						     class="{% if instance.status != 'running' %}hidden{% endif %}">
+						<div id="{{ instance.name|slugify }}-time-remaining-wrapper" class="hidden">
 							<span>Time remaining:</span>
-							<span id="{{ instance.name|slugify }}-time-remaining">
-        {{ instance.time_remaining }}
-       </span>
-							{% if instance.status == 'running' and instance.time_remaining %}
-							<script>
-								// Global variables using Django context data
-								const timeRemainingSeconds = {{ instance.time_remaining }};
-								const instanceName = "{{ instance.name|slugify }}";
-							</script>
-							<script src="{% static 'ec2_starter/update-time-remaining.js' %}"></script>
-							{% endif %}
+							<span id="{{ instance.name|slugify }}-time-remaining"></span>
 						</div>
 					</div>
 				</div>

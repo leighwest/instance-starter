@@ -1,3 +1,0 @@
-(function () {
-    updateTimeRemainingComponent(instanceName, timeRemainingSeconds)
-})();

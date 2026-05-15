@@ -2,15 +2,15 @@ const appPollingIntervals = {};
 
 function formatTimeRemaining(seconds) {
     if (seconds < 60) {
-        return 'Less than 1 minute'
+        return 'Less than 1 minute';
     }
-    const minutes = Math.floor(seconds / 60)
-    return minutes === 1 ? minutes + ' ' + 'minute' : minutes + ' ' + 'minutes'
+    const minutes = Math.floor(seconds / 60);
+    return minutes === 1 ? '1 minute' : minutes + ' minutes';
 }
 
-function updateTimeRemainingComponent(instanceName, timeRemaining, instanceStatus) {
+function updateTimeRemainingComponent(instanceName, timeRemaining) {
     const timeRemainingWrapper = $("#" + instanceName + "-time-remaining-wrapper");
-    if (timeRemaining != null && instanceStatus === 'running') {
+    if (timeRemaining != null) {
         const timeRemainingSpan = $("#" + instanceName + "-time-remaining");
         timeRemainingSpan.text(formatTimeRemaining(timeRemaining));
         timeRemainingWrapper.removeClass('hidden');
@@ -19,21 +19,36 @@ function updateTimeRemainingComponent(instanceName, timeRemaining, instanceStatu
     }
 }
 
-function pollApplicationStatus(instanceName, publicIp) {
+function pollApplicationStatus(instanceName, publicIp, timeRemaining) {
     if (appPollingIntervals[instanceName]) return;
 
+    const appStatusWrapper = $("#" + instanceName + "-app-status-wrapper");
     const appStatus = $("#" + instanceName + "-app-status");
-    appStatus.text('Checking...');
-    appStatus.removeClass('hidden');
 
-    appPollingIntervals[instanceName] = setInterval(function() {
-        fetch('http://' + publicIp, { mode: 'no-cors' })
-            .then(function() {
+    if (appStatus.text().trim() === 'Running') {
+        appStatus.attr('class', 'status-running');
+        updateTimeRemainingComponent(instanceName, timeRemaining);
+        return;
+    }
+
+    appStatusWrapper.removeClass('hidden');
+    appStatus.text('Checking...');
+    appStatus.attr('class', 'status-pending');
+
+    appPollingIntervals[instanceName] = setInterval(function () {
+        fetch('http://' + publicIp, {mode: 'no-cors'})
+            .then(function () {
                 appStatus.text('Running');
+                appStatus.attr('class', 'status-running');
                 clearInterval(appPollingIntervals[instanceName]);
                 delete appPollingIntervals[instanceName];
+
+                const viewSiteButton = $("#" + instanceName + "-view-site");
+                viewSiteButton.attr('data-url', 'http://' + publicIp);
+                viewSiteButton.removeClass('hidden');
+                updateTimeRemainingComponent(instanceName, timeRemaining);
             })
-            .catch(function() {
+            .catch(function () {
                 appStatus.text('Checking...');
             });
     }, 2000);
@@ -44,31 +59,41 @@ function clearApplicationStatus(instanceName) {
         clearInterval(appPollingIntervals[instanceName]);
         delete appPollingIntervals[instanceName];
     }
+    const appStatusWrapper = $("#" + instanceName + "-app-status-wrapper");
     const appStatus = $("#" + instanceName + "-app-status");
     appStatus.text('Checking...');
-    appStatus.addClass('hidden');
+    appStatus.removeClass('status-running');
+    appStatusWrapper.addClass('hidden');
+
+    const viewSiteButton = $("#" + instanceName + "-view-site");
+    viewSiteButton.attr('data-url', '');
+    viewSiteButton.addClass('hidden');
+
+    updateTimeRemainingComponent(instanceName, null);
 }
 
 function updateStatus(instanceName, instanceStatus, timeRemaining, publicIp) {
     const statusSpan = $("#" + instanceName + "-status");
     statusSpan.text(instanceStatus.charAt(0).toUpperCase() + instanceStatus.slice(1));
     statusSpan.removeClass();
-    statusSpan.addClass(`status-${instanceStatus}`);
-
-    const viewSiteButton = $("#" + instanceName + "-view-site");
-    if (publicIp) {
-        viewSiteButton.attr('data-url', 'http://' + publicIp);
-        viewSiteButton.removeClass('hidden');
-    } else {
-        viewSiteButton.attr('data-url', '');
-        viewSiteButton.addClass('hidden');
-    }
+    statusSpan.addClass('status-' + instanceStatus);
 
     if (instanceStatus === 'running' && publicIp) {
-        pollApplicationStatus(instanceName, publicIp);
+        pollApplicationStatus(instanceName, publicIp, timeRemaining);
     } else {
         clearApplicationStatus(instanceName);
     }
-
-    updateTimeRemainingComponent(instanceName, timeRemaining, instanceStatus);
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.instance-item').forEach(function (el) {
+        const instanceName = el.dataset.instanceName;
+        const status = el.dataset.status;
+        const publicIp = el.dataset.publicIp;
+        const timeRemaining = el.dataset.timeRemaining ? parseFloat(el.dataset.timeRemaining) : null;
+
+        if (status === 'running' && publicIp) {
+            pollApplicationStatus(instanceName, publicIp, timeRemaining);
+        }
+    });
+});
