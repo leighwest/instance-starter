@@ -14,3 +14,9 @@ def status_class(value):
     if value is None:
         return 'status-unknown'
     return status_classes.get(value.lower(), 'status-unknown')
+
+@register.filter
+def pretty_name(value):
+    if value is None:
+        return ''
+    return value.replace('-', ' ').title()
