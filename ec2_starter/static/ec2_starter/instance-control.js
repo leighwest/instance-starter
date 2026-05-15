@@ -19,4 +19,9 @@ $(document).ready(function () {
             }
         });
     });
+
+    $(document).on('click', '[id$="-view-site"]', function() {
+            const url = $(this).data('url');
+            if (url) window.open(url, '_blank');
+      });
 });

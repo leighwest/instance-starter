@@ -19,6 +19,8 @@ logger.propagate = True
 
 redis_client = redis.StrictRedis.from_url(settings.CELERY_BROKER_URL)
 
+TRANSITION_STATES = {'pending', 'stopping'}
+
 def _get_ec2_client():
     """Get configured boto3 EC2 client."""
     return boto3.client(
@@ -62,7 +64,8 @@ def get_ec2_instance_status(instance_id):
 
         return {
             'status': instance_state,
-            'time_remaining': instance_time_remaining
+            'time_remaining': instance_time_remaining,
+            'public_ip': instance.get('PublicIpAddress')
         }
 
     except ClientError as e:
@@ -100,8 +103,9 @@ def format_ec2_update_payload(instance_name, status_data):
         instance_key: {
             'instance_name': instance_key,
             'status': status,
-            'time_remaining': time_remaining if status == "running" else None
-       }
+            'time_remaining': time_remaining if status == "running" else None,
+            'public_ip': status_data.get('public_ip') if status == "running" else None
+        }
     }
 
 
@@ -138,6 +142,7 @@ def stop_instance(instance_id, instance_name):
         ec2 = _get_ec2_client()
 
         ec2.stop_instances(InstanceIds=[instance_id])
+        poll_while_transitioning.delay(instance_id, instance_name)
         _delete_global_task_id(instance_id)
         logger.info(f"Successfully stopped instance {instance_id}")
 
@@ -147,6 +152,42 @@ def stop_instance(instance_id, instance_name):
     except Exception as e:
         logger.error(f"Unexpected error stopping instance {instance_id}: {e}")
         raise EC2ServiceError(f"An unexpected error occurred: {str(e)}")
+
+
+@shared_task(bind=True, max_retries=300)
+def poll_while_transitioning(self, instance_id, instance_name):
+    try:
+        ec2 = _get_ec2_client()
+        response = ec2.describe_instances(InstanceIds=[instance_id])
+        instance = response['Reservations'][0]['Instances'][0]
+        state = instance['State']['Name']
+        public_ip = instance.get('PublicIpAddress')
+
+        channel_layer = get_channel_layer()
+        instance_key = instance_name.replace(' ', '-')
+
+        async_to_sync(channel_layer.group_send)(
+            'ec2_updates',
+            {
+                'type': 'ec2_update',
+                'instances': {
+                    instance_key: {
+                        'instance_name': instance_key,
+                        'status': state,
+                        'public_ip': public_ip,
+                        'time_remaining': calc_running_time_remaining(instance)
+                    }
+                }
+            }
+        )
+
+        if state in TRANSITION_STATES:
+            raise self.retry(countdown=1)
+
+    except self.MaxRetriesExceededError:
+        logger.error(f"Polling timed out for {instance_id} — max retries exceeded")
+    except ClientError as e:
+        logger.error(f"AWS error polling {instance_id}: {e}")
 
 def start_ec2_instance(instance_name):
     """
@@ -169,6 +210,7 @@ def start_ec2_instance(instance_name):
         ec2 = _get_ec2_client()
 
         response = ec2.start_instances(InstanceIds=[instance_id])
+        poll_while_transitioning.delay(instance_id, instance_name)
         current_state = response['StartingInstances'][0]['CurrentState']['Name']
 
         melbourne_tz = pytz.timezone('Australia/Melbourne')

@@ -7,25 +7,30 @@ function formatTimeRemaining(seconds) {
 }
 
 function updateTimeRemainingComponent(instanceName, timeRemaining) {
-    const viewSiteButton = $("#" + instanceName + "-view-site");
-    viewSiteButton.removeClass('hidden')
-
     const timeRemainingWrapper = $("#" + instanceName + "-time-remaining-wrapper");
     if (timeRemaining != null) {
         const timeRemainingSpan = $("#" + instanceName + "-time-remaining");
         timeRemainingSpan.text(formatTimeRemaining(timeRemaining));
         timeRemainingWrapper.removeClass('hidden');
     } else {
-        viewSiteButton.addClass('hidden')
         timeRemainingWrapper.addClass('hidden');
     }
 }
 
-function updateStatus(instanceName, instanceStatus, timeRemaining) {
+function updateStatus(instanceName, instanceStatus, timeRemaining, publicIp) {
     const statusSpan = $("#" + instanceName + "-status");
     statusSpan.text(instanceStatus.charAt(0).toUpperCase() + instanceStatus.slice(1));
     statusSpan.removeClass();
     statusSpan.addClass(`status-${instanceStatus}`);
 
-    updateTimeRemainingComponent(instanceName, timeRemaining)
+    const viewSiteButton = $("#" + instanceName + "-view-site");
+    if (publicIp) {
+        viewSiteButton.attr('data-url', 'http://' + publicIp);
+        viewSiteButton.removeClass('hidden');
+    } else {
+        viewSiteButton.attr('data-url', '');
+        viewSiteButton.addClass('hidden');
+    }
+
+    updateTimeRemainingComponent(instanceName, timeRemaining);
 }

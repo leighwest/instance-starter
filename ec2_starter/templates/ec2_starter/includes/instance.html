@@ -24,7 +24,9 @@
 			<div class="button-wrapper">
 				<button class="start-instance" data-instance-name="{{ instance.name }}">Start</button>
 				<button id="{{ instance.name|slugify }}-view-site"
-				        class="{% if instance.status != 'running' %}hidden{% endif %}">View Site
+				        class="{% if instance.status != 'running' %}hidden{% endif %}"
+				        data-url="{% if instance.status == 'running' %}http://{{ instance.public_ip }}{% endif %}">
+					View Site
 				</button>
 			</div>
 		</div>

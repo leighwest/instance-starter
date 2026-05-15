@@ -12,7 +12,7 @@ socket.onmessage = function(e) {
     for (const key in instances) {
         if (instances.hasOwnProperty(key)) {
             const instance = instances[key];
-            updateStatus(key, instance.status, instance.time_remaining)
+            updateStatus(key, instance.status, instance.time_remaining, instance.public_ip)
         }
     }
 };
