@@ -1,6 +1,6 @@
 # instance-starter
 
-A Django application for managing AWS EC2 instance start/stop operations via a web UI. Uses WebSockets for real-time status updates and Celery for background tasks.
+A Django application for managing AWS EC2 instances via a web UI. Supports real-time status updates via WebSockets, background task processing with Celery, and a dark-themed responsive UI.
 
 **Live site:** https://instance-starter.leighwest.dev
 
@@ -9,7 +9,10 @@ A Django application for managing AWS EC2 instance start/stop operations via a w
 ## What it does
 
 - Start and stop EC2 instances from a web interface
-- Real-time status updates via WebSockets (no page refresh required)
+- Real-time status updates via WebSockets — no page refresh required
+- Per-second countdown timer with progress bar for running instances
+- Application health check via server-side proxy to avoid mixed content issues
+- Tag-based EC2 instance discovery — instances seeded into the database via AWS tag filter, no hardcoded IDs in code
 - Background task processing with Celery
 - Scheduled status broadcasts every 10 seconds via Celery Beat
 
@@ -28,6 +31,8 @@ A Django application for managing AWS EC2 instance start/stop operations via a w
 | Containerisation | Docker Compose |
 | Reverse proxy | Nginx |
 | Cloud provider | AWS (EC2 management target) |
+| Image registry | GitHub Container Registry (GHCR) |
+| CI/CD | GitHub Actions (two-job: build + deploy) |
 
 ---
 
@@ -43,10 +48,12 @@ Key files in this repo:
 - `instance_starter/settings.py` — Django settings, all config via environment variables
 - `docker-compose.yaml` — 5 services: db, redis, web, celery_worker, celery_beat
 - `docker/Dockerfile.web` — Django app container
-- `ec2_starter/models.py` — EC2 model
+- `ec2_starter/models.py` — EC2 instance registry model
+- `ec2_starter/service/ec2_service.py` — AWS operations, Celery tasks, WebSocket broadcasts
 - `ec2_starter/management/commands/ensure_superuser.py` — idempotent superuser creation
+- `ec2_starter/management/commands/sync_instances.py` — tag-based EC2 discovery and DB sync
 - `.env.example` — environment variable template
-- `.github/workflows/deploy.yml` — CI/CD pipeline
+- `.github/workflows/deploy.yml` — two-job CI/CD pipeline (build on GitHub, deploy via self-hosted runner)
 
 ---
 
@@ -56,11 +63,17 @@ Key files in this repo:
 git clone https://github.com/leighwest/instance-starter.git
 cd instance-starter
 cp .env.example .env
-# fill in .env with local values
+# fill in .env with real AWS credentials and local DB config
 docker-compose up -d
+docker-compose exec web python manage.py migrate
+docker-compose exec web python manage.py collectstatic --noinput
+docker-compose exec web python manage.py ensure_superuser
+docker-compose exec web python manage.py sync_instances
 ```
 
 The app will be available at http://localhost:8000.
+
+A `docker-compose.override.yml` is included for local development — it replaces the GHCR image reference with a local build.
 
 ---
 

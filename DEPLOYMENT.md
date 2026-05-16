@@ -32,7 +32,8 @@ git push → GitHub Actions (ubuntu-latest)
                       ├─ docker-compose pull
                       ├─ docker-compose down && up -d
                       ├─ migrate
-                      └─ collectstatic
+                      ├─ collectstatic
+                      └─ sync_instances
 ```
 
 ---
@@ -62,7 +63,7 @@ Provisioning is fully automated via Terraform + cloud-init. A `terraform apply` 
 
 1. Create a Vultr instance and attach the reserved IP
 2. Run cloud-init, which installs Docker, Nginx, and UFW; creates the `deployer` user; writes `.env`; clones the repo; and starts all containers
-3. Run migrations, collectstatic, and ensure_superuser
+3. Run migrations, collectstatic, ensure_superuser, and sync_instances
 4. Obtain a Let's Encrypt certificate via Certbot
 
 ```bash
@@ -187,6 +188,7 @@ docker-compose logs -f web
 docker-compose pull
 docker-compose down && docker-compose up -d
 docker-compose exec -T web python manage.py ensure_superuser
+docker-compose exec -T web python manage.py sync_instances
 
 # SSL
 certbot certificates          # list certificates and expiry
@@ -201,7 +203,6 @@ systemctl status certbot.timer
 - **Reserved IP detach error on destroy** — Vultr API errors when detaching reserved IP if the instance is already gone. Workaround: manually delete the reserved IP in the Vultr dashboard, then `terraform state rm vultr_reserved_ip.main` and re-apply.
 - **Self-hosted runner is manual** — runner setup is not automated in cloud-init, must be done manually after each `terraform apply`.
 - **GHCR auth is manual** — PAT login must be done manually after each `terraform apply`.
-- **docker-compose version warning** — `version` attribute in `docker-compose.yaml` is obsolete, harmless but should be removed.
 
 ---
 
@@ -216,4 +217,6 @@ systemctl status certbot.timer
 - **ALLOWED_HOSTS includes domain** — browsers send the domain as the Host header once DNS is live. Must be in ALLOWED_HOSTS alongside the IP.
 - **docker-compose restart vs down/up** — `restart` does not re-read `.env`. Use `down && up -d` when environment variables change.
 - **Self-hosted runner direction** — runner connects outbound to GitHub. No inbound firewall rules or SSH secrets in GitHub required.
-- **GHCR auth on server** — `GITHUB_TOKEN` in the workflow authenticates the GitHub-hosted runner to push. A separate PAT is needed for the server to pull.
+- **GHCR auth on server** — `GITHUB_TOKEN` in the workflow authenticates the GitHub-hosted runner to push. A separate classic PAT is needed for the server to pull — fine-grained tokens lack `read:packages` support.
+- **Tag-based discovery** — filter instances by tag rather than hardcoding IDs; resilient to AMI rebuilds and instance recreation. Instance IDs are synced into the database via `sync_instances`.
+- **Mixed content** — browsers block HTTP requests from HTTPS pages. Proxy health checks through Django to avoid this.
