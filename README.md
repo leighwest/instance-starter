@@ -1,4 +1,4 @@
-# instance-starter
+# AWS EC2 Instance Starter
 
 A Django application for managing AWS EC2 instances via a web UI. Supports real-time status updates via WebSockets, background task processing with Celery, and a dark-themed responsive UI.
 
