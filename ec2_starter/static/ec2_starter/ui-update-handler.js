@@ -36,17 +36,22 @@ function pollApplicationStatus(instanceName, publicIp, timeRemaining) {
     appStatus.attr('class', 'status-pending');
 
     appPollingIntervals[instanceName] = setInterval(function () {
-        fetch('http://' + publicIp, {mode: 'no-cors'})
-            .then(function () {
-                appStatus.text('Running');
-                appStatus.attr('class', 'status-running');
-                clearInterval(appPollingIntervals[instanceName]);
-                delete appPollingIntervals[instanceName];
+        fetch('/check_health/?ip=' + publicIp)
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                if (data.healthy) {
+                    appStatus.text('Running');
+                    appStatus.attr('class', 'status-running');
+                    clearInterval(appPollingIntervals[instanceName]);
+                    delete appPollingIntervals[instanceName];
 
-                const viewSiteButton = $("#" + instanceName + "-view-site");
-                viewSiteButton.attr('data-url', 'http://' + publicIp);
-                viewSiteButton.removeClass('hidden');
-                updateTimeRemainingComponent(instanceName, timeRemaining);
+                    const viewSiteButton = $("#" + instanceName + "-view-site");
+                    viewSiteButton.attr('data-url', 'http://' + publicIp);
+                    viewSiteButton.removeClass('hidden');
+                    updateTimeRemainingComponent(instanceName, timeRemaining);
+                } else {
+                    appStatus.text('Checking...');
+                }
             })
             .catch(function () {
                 appStatus.text('Checking...');
@@ -62,7 +67,7 @@ function clearApplicationStatus(instanceName) {
     const appStatusWrapper = $("#" + instanceName + "-app-status-wrapper");
     const appStatus = $("#" + instanceName + "-app-status");
     appStatus.text('Checking...');
-    appStatus.removeClass('status-running');
+    appStatus.attr('class', 'status-pending');
     appStatusWrapper.addClass('hidden');
 
     const viewSiteButton = $("#" + instanceName + "-view-site");

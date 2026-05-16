@@ -7,6 +7,7 @@ urlpatterns = [
 
     path('start_instance/', views.start_instance, name='start-instance'),
 
-    path('instance_status/', views.instance_status, name='instance-status')
+    path('instance_status/', views.instance_status, name='instance-status'),
 
+    path('check_health/', views.check_instance_health, name='check-instance-health')
 ]

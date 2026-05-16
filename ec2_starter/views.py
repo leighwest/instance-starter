@@ -81,3 +81,14 @@ def starting_page(request):
     return render(request, "ec2_starter/index.html", {
         "instances": instances_with_status
     })
+
+def check_instance_health(request):
+    public_ip = request.GET.get('ip')
+    if not public_ip:
+        return JsonResponse({'healthy': False})
+    try:
+        import urllib.request
+        urllib.request.urlopen(f'http://{public_ip}', timeout=3)
+        return JsonResponse({'healthy': True})
+    except Exception:
+        return JsonResponse({'healthy': False})
