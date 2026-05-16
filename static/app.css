@@ -11,7 +11,24 @@ html {
 body {
   margin: 0;
   background-color: #0d1117;
-  padding: 5rem 18rem;
+  padding: 3rem 1.5rem;
   color: #e2e8f0;
   font-weight: normal;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+@media (max-width: 1200px) {
+  body {
+    padding: 2rem 4rem;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 1.5rem 1rem;
+  }
 }

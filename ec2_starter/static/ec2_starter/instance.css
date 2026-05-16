@@ -25,7 +25,7 @@ ul {
   border: 0.5px solid #30363d;
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
-  align-items: start;
+  align-items: stretch;
 }
 
 .left {
@@ -193,4 +193,21 @@ ul {
   background: linear-gradient(90deg, #00d4ff, #00ff88);
   border-radius: 99px;
   transition: width 1s linear;
+}
+
+@media (max-width: 768px) {
+  .instance {
+    grid-template-columns: 1fr;
+  }
+
+  .right {
+    border-left: none;
+    border-top: 0.5px solid #30363d;
+    padding-left: 0;
+    padding-top: 1rem;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
 }
