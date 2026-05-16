@@ -11,36 +11,34 @@
 			<h2>{{ instance.name|pretty_name }}</h2>
 			<p>{{ instance.description }}</p>
 			<div class="button-wrapper">
-				<button class="start-instance" data-instance-name="{{ instance.name }}">Start</button>
-				<button id="{{ instance.name|slugify }}-view-site" class="hidden" data-url="">View Site</button>
+				<button class="start-instance btn-start" data-instance-name="{{ instance.name }}">Start</button>
+				<button id="{{ instance.name|slugify }}-view-site" class="btn-view-site hidden" data-url="">View Site</button>
 			</div>
 		</div>
 		<div class="right">
-			<div class="top-row">
-				<div class="status-wrapper">
-					<h3>Status:</h3>
-					<div class="statuses-wrapper">
-						<div class="individual-status">
-							<span>EC2 Instance:</span>
-							{% if instance.status == 'pending' %}
-							<span id="{{ instance.name|slugify }}-status"
-							      class="status {{ instance.status|default:'unknown'|status_class }}">Starting...</span>
-							{% else %}
-							<span id="{{ instance.name|slugify }}-status"
-							      class="status {{ instance.status|default:'unknown'|status_class }}">{{ instance.status|default:"Unknown"|title }}</span>
-							{% endif %}
-						</div>
-						<div class="individual-status hidden" id="{{ instance.name|slugify }}-app-status-wrapper">
-							<span>Application:</span>
-							<span id="{{ instance.name|slugify }}-app-status" class="status-pending">Checking...</span>
-						</div>
-					</div>
-					<div class="bottom-row">
-						<div id="{{ instance.name|slugify }}-time-remaining-wrapper" class="hidden">
-							<span>Time remaining:</span>
-							<span id="{{ instance.name|slugify }}-time-remaining"></span>
-						</div>
-					</div>
+			<div class="status-wrapper">
+				<div class="individual-status">
+					<span class="status-label">EC2 Instance</span>
+					{% if instance.status == 'pending' %}
+					<span id="{{ instance.name|slugify }}-status"
+					      class="badge status-pending"><span class="badge-dot"></span>Starting...</span>
+					{% else %}
+					<span id="{{ instance.name|slugify }}-status"
+					      class="badge {{ instance.status|default:'unknown'|status_class }}"><span class="badge-dot"></span>{{ instance.status|default:"Unknown"|title }}</span>
+					{% endif %}
+				</div>
+				<div class="individual-status hidden" id="{{ instance.name|slugify }}-app-status-wrapper">
+					<span class="status-label">Application</span>
+					<span id="{{ instance.name|slugify }}-app-status" class="badge status-pending"><span class="badge-dot"></span>Checking...</span>
+				</div>
+			</div>
+			<div id="{{ instance.name|slugify }}-time-remaining-wrapper" class="time-remaining-section hidden">
+				<div class="time-remaining-header">
+					<span class="time-remaining-label">Time remaining</span>
+					<span id="{{ instance.name|slugify }}-time-remaining" class="time-remaining-value"></span>
+				</div>
+				<div class="progress-bar">
+					<div id="{{ instance.name|slugify }}-progress-fill" class="progress-fill" style="width: 0%"></div>
 				</div>
 			</div>
 		</div>
