@@ -2,6 +2,8 @@
 
 A Django application for managing AWS EC2 instances via a web UI. Supports real-time status updates via WebSockets, background task processing with Celery, and a dark-themed responsive UI.
 
+The infrastructure is managed in a companion repo: [instance-starter-infra](https://github.com/leighwest/instance-starter-infra).
+
 **Live site:** https://instance-starter.leighwest.dev
 
 ---
