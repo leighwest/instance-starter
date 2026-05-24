@@ -1,2 +1,14 @@
 .env
+# Python
 __pycache__/
+*.pyc
+
+# Django
+staticfiles/
+
+# Celery
+celerybeat-schedule
+
+# IDE
+.idea/
+*.iml
