@@ -12,11 +12,11 @@ The infrastructure is managed in a companion repo: [instance-starter-infra](http
 
 - Start and stop EC2 instances from a web interface
 - Real-time status updates via WebSockets — no page refresh required
+- Auto-shutdown after 250 seconds — implemented as a revocable Celery task; extending an instance cancels the pending stop and schedules a fresh one, so the timer resets correctly for all connected clients
 - Per-second countdown timer with progress bar for running instances
 - Application health check via server-side proxy to avoid mixed content issues
 - Tag-based EC2 instance discovery — instances seeded into the database via AWS tag filter, no hardcoded IDs in code
-- Background task processing with Celery
-- Scheduled status broadcasts every 10 seconds via Celery Beat
+- Background task processing with Celery — polling, scheduled shutdowns, and 10-second status broadcasts via Celery Beat
 
 ---
 
