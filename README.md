@@ -34,7 +34,7 @@ The infrastructure is managed in a companion repo: [instance-starter-infra](http
 | Reverse proxy | Nginx |
 | Cloud provider | AWS (EC2 management target) |
 | Image registry | GitHub Container Registry (GHCR) |
-| CI/CD | GitHub Actions (two-job: build + deploy) |
+| CI/CD | GitHub Actions (build on GitHub-hosted runner, deploy via self-hosted runner) |
 
 ---
 

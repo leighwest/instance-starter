@@ -62,7 +62,7 @@ Key files in `instance-starter-infra`:
 Provisioning is fully automated via Terraform + cloud-init. A `terraform apply` will:
 
 1. Create a Vultr instance and attach the reserved IP
-2. Run cloud-init, which installs Docker, Nginx, and UFW; creates the `deployer` user; writes `.env`; clones the repo; and starts all containers
+2. Run cloud-init, which installs Docker, Nginx, and UFW; creates the `deployer` user; writes `.env`; clones the repo; authenticates with GHCR; starts all containers; and registers the GitHub Actions runner
 3. Run migrations, collectstatic, ensure_superuser, and sync_instances
 4. Obtain a Let's Encrypt certificate via Certbot
 
@@ -73,10 +73,7 @@ terraform plan
 terraform apply
 ```
 
-After provisioning, two manual steps are required (not yet automated):
-
-1. **GHCR auth** — so the server can pull images on deploy (see below)
-2. **Self-hosted runner** — so GitHub Actions can trigger deploys (see below)
+After provisioning, one known issue remains — see Known Issues below.
 
 ---
 
@@ -140,19 +137,7 @@ ssh -i ~/.ssh/instance_starter_deploy root@139.84.203.187
 
 Docker images are built by GitHub Actions and pushed to `ghcr.io/leighwest/instance-starter:latest`. The server pulls the pre-built image on every deploy — no build step runs on the server.
 
-### One-time GHCR auth setup (per server provisioning)
-
-After each `terraform apply`, authenticate the server to pull from GHCR:
-
-1. Create a GitHub personal access token (classic) with `read:packages` scope at GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic). Suggested note: `instance-starter server GHCR pull`.
-
-2. SSH into the server as deployer and run:
-
-```bash
-echo <your-pat> | docker login ghcr.io -u leighwest --password-stdin
-```
-
-Docker saves credentials to `~/.docker/config.json`. All subsequent `docker-compose pull` calls in the pipeline will use them automatically.
+GHCR authentication is handled automatically during provisioning — cloud-init runs `docker login ghcr.io` as the `deployer` user using a PAT injected via Terraform.
 
 ---
 
@@ -160,7 +145,7 @@ Docker saves credentials to `~/.docker/config.json`. All subsequent `docker-comp
 
 The deploy job runs on a self-hosted runner installed as the `deployer` user on the server. The runner connects outbound to GitHub — no inbound firewall rules or SSH secrets in GitHub required.
 
-Runner setup must be done manually after each `terraform apply`. Follow the GitHub-generated instructions at: Settings → Actions → Runners → New self-hosted runner.
+Runner registration is handled automatically during provisioning — cloud-init fetches a registration token from the GitHub API and registers the runner using `config.sh --replace`, then installs and starts it as a systemd service.
 
 ```bash
 # Runner management (on server)
@@ -183,12 +168,12 @@ terraform destroy
 
 # Docker (on server, as deployer)
 cd /home/deployer/instance-starter
-docker-compose ps
-docker-compose logs -f web
-docker-compose pull
-docker-compose down && docker-compose up -d
-docker-compose exec -T web python manage.py ensure_superuser
-docker-compose exec -T web python manage.py sync_instances
+docker-compose -f docker-compose.yaml ps
+docker-compose -f docker-compose.yaml logs -f web
+docker-compose -f docker-compose.yaml pull
+docker-compose -f docker-compose.yaml down && docker-compose -f docker-compose.yaml up -d
+docker-compose -f docker-compose.yaml exec -T web python manage.py ensure_superuser
+docker-compose -f docker-compose.yaml exec -T web python manage.py sync_instances
 
 # SSL
 certbot certificates          # list certificates and expiry
@@ -201,8 +186,6 @@ systemctl status certbot.timer
 ## Known issues
 
 - **Reserved IP detach error on destroy** — Vultr API errors when detaching reserved IP if the instance is already gone. Workaround: manually delete the reserved IP in the Vultr dashboard, then `terraform state rm vultr_reserved_ip.main` and re-apply.
-- **Self-hosted runner is manual** — runner setup is not automated in cloud-init, must be done manually after each `terraform apply`.
-- **GHCR auth is manual** — PAT login must be done manually after each `terraform apply`.
 
 ---
 
@@ -220,3 +203,8 @@ systemctl status certbot.timer
 - **GHCR auth on server** — `GITHUB_TOKEN` in the workflow authenticates the GitHub-hosted runner to push. A separate classic PAT is needed for the server to pull — fine-grained tokens lack `read:packages` support.
 - **Tag-based discovery** — filter instances by tag rather than hardcoding IDs; resilient to AMI rebuilds and instance recreation. Instance IDs are synced into the database via `sync_instances`.
 - **Mixed content** — browsers block HTTP requests from HTTPS pages. Proxy health checks through Django to avoid this.
+- **`docker-compose.override.yml` is auto-merged** — Docker Compose automatically merges any file named `docker-compose.override.yml` with the base file. Use explicit `-f docker-compose.yaml` in CI and cloud-init to prevent local dev overrides being picked up on the server.
+- **GitHub Actions runner registration token** — fetch via POST to `/repos/{owner}/{repo}/actions/runners/registration-token` using a classic PAT with `repo` scope; parse with `python3` rather than `grep` to avoid fragile JSON string matching.
+- **`config.sh --replace`** — prevents runner registration failing with "runner exists with same name" on reprovision.
+- **`svc.sh` is generated by `config.sh`** — not present in the extracted runner archive; only appears after `config.sh` completes successfully.
+- **cloud-init `cd` doesn't persist between list items** — each `-` item runs in a fresh subshell. Use a multiline `|` block for commands that depend on a working directory.
