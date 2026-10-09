@@ -33,6 +33,7 @@ The infrastructure is managed in a companion repo: [instance-starter-infra](http
 | Containerisation | Docker Compose |
 | Reverse proxy | Nginx |
 | Cloud provider | AWS (EC2 management target) |
+| AWS auth | IAM Roles Anywhere: the server holds an X.509 client cert and gets 1-hour credentials for a tag-scoped role (no long-lived AWS keys) |
 | Image registry | GitHub Container Registry (GHCR) |
 | CI/CD | GitHub Actions (build on GitHub-hosted runner, deploy via self-hosted runner) |
 
@@ -48,7 +49,7 @@ instance-starter-infra/    # separate repo — Terraform + cloud-init
 Key files in this repo:
 
 - `instance_starter/settings.py` — Django settings, all config via environment variables
-- `docker-compose.yaml` — 5 services: db, redis, web, celery_worker, celery_beat
+- `docker-compose.yaml` — 5 services: db, redis, web, celery_worker, celery_beat (the app services also mount the Roles Anywhere helper and AWS config)
 - `docker/Dockerfile.web` — Django app container
 - `ec2_starter/models.py` — EC2 instance registry model
 - `ec2_starter/service/ec2_service.py` — AWS operations, Celery tasks, WebSocket broadcasts
@@ -65,7 +66,9 @@ Key files in this repo:
 git clone https://github.com/leighwest/instance-starter.git
 cd instance-starter
 cp .env.example .env
-# fill in .env with real AWS credentials and local DB config
+# fill in .env with local DB config and AWS_REGION. There are no AWS key variables:
+# boto3 uses its default credential chain, so set AWS_PROFILE (or your own SSO/profile)
+# and make it available to the containers if you want to call real EC2 locally.
 docker-compose up -d
 docker-compose exec web python manage.py migrate
 docker-compose exec web python manage.py collectstatic --noinput
