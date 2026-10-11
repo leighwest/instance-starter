@@ -49,7 +49,7 @@ instance-starter-infra/    # separate repo — Terraform + cloud-init
 Key files in this repo:
 
 - `instance_starter/settings.py` — Django settings, all config via environment variables
-- `docker-compose.yaml` — 5 services: db, redis, web, celery_worker, celery_beat (the app services also mount the Roles Anywhere helper and AWS config)
+- `docker-compose.yaml` — 5 services: db, redis, web, celery_worker, celery_beat (`web` and `celery_worker` also mount the Roles Anywhere helper and AWS config)
 - `docker/Dockerfile.web` — Django app container
 - `ec2_starter/models.py` — EC2 instance registry model
 - `ec2_starter/service/ec2_service.py` — AWS operations, Celery tasks, WebSocket broadcasts

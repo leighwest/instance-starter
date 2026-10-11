@@ -128,7 +128,7 @@ ssh -i ~/.ssh/instance_starter_deploy root@139.84.203.187
 The app has no long-lived AWS keys. The server holds an X.509 client cert (`CN=instance-starter`) signed by a private CA; `aws_signing_helper` exchanges it for 1-hour credentials for the role `instance-starter-app`, which can only describe, start and stop instances tagged `Role=instance-starter-toy` and write their `ExpirationTime` tag.
 
 - **Server files:** `/usr/local/bin/aws_signing_helper`, and `/etc/instance-starter/aws/` containing `client.crt`, `client.key` and `config` (a profile `instance-starter` using `credential_process`; paths must be absolute).
-- **Containers:** `web`, `celery_worker` and `celery_beat` set `AWS_CONFIG_FILE=/etc/instance-starter/aws/config` and `AWS_PROFILE=instance-starter`, and mount the helper and config dir read-only. boto3's default credential chain caches and refreshes the credentials.
+- **Containers:** `web` and `celery_worker` set `AWS_CONFIG_FILE=/etc/instance-starter/aws/config` and `AWS_PROFILE=instance-starter`, and mount the helper and config dir read-only. boto3's default credential chain caches and refreshes the credentials.
 - **Don't set `AWS_ACCESS_KEY_ID` in `.env`:** env-var keys take precedence over `credential_process`.
 - **Cert rotation:** the client cert expires about 2027-10-04. Sign a new one with the CA (key held offline in a password manager) and replace `client.crt`/`client.key`; no AWS change is needed.
 - **AWS side:** managed in `instance-starter-infra/terraform-iam/` (trust anchor from `pki/ca.crt`, role, profile).
